@@ -14,7 +14,7 @@ import { computeTargets } from "@/lib/calc";
 import { dateKey } from "@/lib/date";
 import type { AppData, FoodEntry, Profile, Targets, WorkoutLog } from "@/lib/types";
 
-const STORAGE_KEY = "pocketcoach:v1";
+const STORAGE_KEY = "rowiantracker:v1";
 
 const EMPTY: AppData = {
   profile: null,

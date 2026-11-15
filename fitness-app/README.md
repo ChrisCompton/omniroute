@@ -1,4 +1,4 @@
-# PocketCoach 💪
+# Rowian Tracker 💪
 
 Your own personal fitness guy, in an Expo (React Native) app. It works out your calories, logs what you eat, tells you what to do in the gym, and tracks your steps.
 

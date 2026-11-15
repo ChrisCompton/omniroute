@@ -16,7 +16,7 @@ export default function Onboarding() {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={[styles.h1, { marginTop: 12 }]}>
-            Hey, I'm your <Text style={{ color: colors.accent }}>PocketCoach</Text> 👋
+            Hey, I'm your <Text style={{ color: colors.accent }}>Rowian Tracker</Text> 👋
           </Text>
           <Text style={[styles.muted, { fontSize: 16, marginTop: 8, marginBottom: 20 }]}>
             Tell me a bit about you and I'll set your calories, macros, daily steps and a gym plan.

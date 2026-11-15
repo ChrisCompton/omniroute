@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "PocketCoach",
-    "slug": "pocket-coach",
+    "name": "Rowian Tracker",
+    "slug": "rowian-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rowian.tracker",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSMotionUsageDescription": "PocketCoach counts your steps to track your daily step goal."
+        "NSMotionUsageDescription": "Rowian Tracker counts your steps to track your daily step goal.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -20,7 +23,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.ACTIVITY_RECOGNITION"]
+      "permissions": ["android.permission.ACTIVITY_RECOGNITION"],
+      "package": "com.rowian.tracker"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -32,14 +36,19 @@
       [
         "expo-sensors",
         {
-          "motionPermission": "PocketCoach counts your steps to track your daily step goal."
+          "motionPermission": "Rowian Tracker counts your steps to track your daily step goal."
         }
       ]
     ],
-    "scheme": "pocketcoach",
+    "scheme": "rowiantracker",
     "backgroundColor": "#0B0F14",
     "experiments": {
       "typedRoutes": false
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F14"
     }
   }
 }
