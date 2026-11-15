@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "PocketCoach",
+    "slug": "pocket-coach",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "PocketCoach counts your steps to track your daily step goal."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.ACTIVITY_RECOGNITION"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "PocketCoach counts your steps to track your daily step goal."
+        }
+      ]
+    ],
+    "scheme": "pocketcoach",
+    "backgroundColor": "#0B0F14",
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
