@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.9.0",
     "@expo/metro-runtime": "~58.0.17",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -32,7 +31,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/__tests__/*.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/__tests__/*.test.ts",
+    "export:web": "node scripts/export-web.mjs"
   },
   "private": true
 }

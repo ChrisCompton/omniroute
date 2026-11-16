@@ -34,11 +34,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - name: Export web build
-        run: npx expo export --platform web --output-dir dist
+        run: node scripts/export-web.mjs dist
         env:
           EXPO_BASE_URL: /${{ github.event.repository.name }}
-      - name: SPA fallback for deep links
-        run: cp dist/index.html dist/404.html && touch dist/.nojekyll
+          EXPO_PUBLIC_AI_PROXY_URL: ${{ vars.AI_PROXY_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: fitness-app/dist

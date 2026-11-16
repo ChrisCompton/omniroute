@@ -1,8 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 import type { Macros, Meal, Profile, Targets } from "./types";
-
-export const AI_MODEL = "claude-opus-5-5";
 
 export interface EstimateItem {
   name: string;
@@ -22,61 +18,6 @@ export interface CoachReply {
   items: EstimateItem[];
 }
 
-const REPLY_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["status", "message", "options", "meal", "items"],
-  properties: {
-    status: {
-      type: "string",
-      enum: ["asking", "estimate", "chat"],
-      description:
-        "asking = you need one more detail before estimating; estimate = items holds the final itemised estimate; chat = a general answer, nothing to log",
-    },
-    message: {
-      type: "string",
-      description: "What to say to the user. Short, friendly, plain text (no markdown tables).",
-    },
-    options: {
-      type: "array",
-      items: { type: "string" },
-      description:
-        "2-5 short tappable answers when asking (e.g. 'Small (fist-sized)', 'Medium', 'Large'). Empty otherwise.",
-    },
-    meal: {
-      type: "string",
-      enum: ["breakfast", "lunch", "dinner", "snack"],
-      description: "Best guess at which meal this is, from what the user said or the time of day.",
-    },
-    items: {
-      type: "array",
-      description: "Only when status is estimate: one entry per food or drink. Empty otherwise.",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["name", "portion", "kcal", "protein", "carbs", "fat"],
-        properties: {
-          name: { type: "string" },
-          portion: { type: "string", description: "e.g. '1 large burrito', '330 ml can'" },
-          kcal: { type: "number" },
-          protein: { type: "number", description: "grams" },
-          carbs: { type: "number", description: "grams" },
-          fat: { type: "number", description: "grams" },
-        },
-      },
-    },
-  },
-} as const;
-
-const SYSTEM_PROMPT = `You are the nutrition coach inside Rowian Tracker, a calorie and fitness app. The user tells you what they ate or drank, and your job is to turn that into an accurate calorie and macro estimate they can log.
-
-How to work:
-- Before estimating, ask about the details that change the calories the most and that the user hasn't already given: portion size, how it was cooked (fried, grilled, oil or butter used), sauces, dressings, toppings, cheese, sugary drinks or alcohol, and the restaurant or brand if it is a known chain.
-- Ask one question per reply, with 2-5 short tappable options. Describe portions with everyday references (a fist, a palm, a deck of cards, a standard can) so they are easy to answer.
-- Stop asking after about three questions, or straight away if the user says to just estimate. When a detail is still unknown, assume a typical portion and say what you assumed in the message.
-- When you estimate, list every food and drink separately with realistic numbers from standard nutrition data, and keep the message to a sentence or two (the app shows the numbers).
-- If the user asks a general nutrition, diet or training question instead, answer it briefly with status "chat", using what you know about their goal and today's intake. Stay practical and encouraging, and don't give medical advice; suggest a doctor or dietitian for medical conditions.`;
-
 export interface CoachContext {
   profile: Profile;
   targets: Targets;
@@ -84,22 +25,16 @@ export interface CoachContext {
   now?: Date;
 }
 
-function contextNote(c: CoachContext): string {
-  const now = c.now ?? new Date();
-  const goal = { lose: "lose fat", maintain: "maintain weight", gain: "build muscle" }[
-    c.profile.goal
-  ];
-  return [
-    `About the user: ${c.profile.age}-year-old ${c.profile.sex}, ${c.profile.heightCm} cm, ${c.profile.weightKg} kg, goal: ${goal}.`,
-    `Daily targets: ${c.targets.kcal} kcal, ${c.targets.protein} g protein, ${c.targets.carbs} g carbs, ${c.targets.fat} g fat.`,
-    `Logged so far today: ${Math.round(c.eatenToday.kcal)} kcal, ${Math.round(c.eatenToday.protein)} g protein.`,
-    `Local time: ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`,
-  ].join("\n");
-}
+export type ChatTurn =
+  | { role: "user"; content: string }
+  | { role: "assistant"; content: Record<string, unknown>[] };
 
-export type ChatHistory = Anthropic.Beta.BetaMessageParam[];
+export type ChatHistory = ChatTurn[];
 
-export type AiErrorKind = "auth" | "rate" | "network" | "refusal" | "other";
+/** The shared AI server (Cloudflare Worker in ai-proxy/). Set at build time. */
+export const AI_PROXY_URL = (process.env.EXPO_PUBLIC_AI_PROXY_URL ?? "").replace(/\/+$/, "");
+
+export type AiErrorKind = "rate" | "network" | "refusal" | "other";
 
 export class AiError extends Error {
   readonly kind: AiErrorKind;
@@ -149,57 +84,60 @@ export function parseReply(text: string): CoachReply {
 }
 
 /**
- * Send the conversation to Claude and get the next structured reply.
- * Returns the reply plus the assistant turn to append to the history
- * (the full content, so thinking blocks are passed back unchanged next turn).
+ * Send the conversation to the shared AI server and get the next structured reply.
+ * Returns the reply plus the assistant turn to append to the history (the full
+ * content, so the model's thinking blocks are passed back unchanged next turn).
  */
 export async function askCoach(
-  apiKey: string,
   history: ChatHistory,
   ctx: CoachContext
-): Promise<{ reply: CoachReply; assistantTurn: Anthropic.Beta.BetaMessageParam }> {
-  // The key belongs to the person using the app and never leaves their device
-  // except to call api.anthropic.com, so calling from the browser is intended here.
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-  let response: Anthropic.Beta.BetaMessage;
-  try {
-    response = await client.beta.messages.create({
-      model: AI_MODEL,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: `${SYSTEM_PROMPT}\n\n${contextNote(ctx)}`,
-      output_config: { effort: "low", format: { type: "json_schema", schema: REPLY_SCHEMA } },
-      messages: history,
-    });
-  } catch (err) {
-    if (
-      err instanceof Anthropic.AuthenticationError ||
-      err instanceof Anthropic.PermissionDeniedError
-    ) {
-      throw new AiError("Your API key was rejected. Check it in the AI settings.", "auth");
-    }
-    if (err instanceof Anthropic.RateLimitError) {
-      throw new AiError("Too many requests right now. Wait a moment and try again.", "rate");
-    }
-    if (err instanceof Anthropic.APIConnectionError) {
-      throw new AiError("Couldn't reach the AI. Check your internet connection.", "network");
-    }
-    if (err instanceof Anthropic.APIError) {
-      throw new AiError(`The AI request failed (${err.status ?? "error"}). Try again.`, "other");
-    }
-    throw new AiError("Something went wrong talking to the AI.", "other");
-  }
+): Promise<{ reply: CoachReply; assistantTurn: ChatTurn }> {
+  if (!AI_PROXY_URL) throw new AiError("The AI chat isn't switched on yet.", "other");
+  const now = ctx.now ?? new Date();
+  const context = {
+    age: ctx.profile.age,
+    sex: ctx.profile.sex,
+    heightCm: ctx.profile.heightCm,
+    weightKg: ctx.profile.weightKg,
+    goal: ctx.profile.goal,
+    targets: {
+      kcal: ctx.targets.kcal,
+      protein: ctx.targets.protein,
+      carbs: ctx.targets.carbs,
+      fat: ctx.targets.fat,
+    },
+    eatenKcal: Math.round(ctx.eatenToday.kcal),
+    eatenProtein: Math.round(ctx.eatenToday.protein),
+    localTime: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+  };
 
-  if (response.stop_reason === "refusal") {
+  let res: Response;
+  try {
+    res = await fetch(`${AI_PROXY_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: history, context }),
+    });
+  } catch {
+    throw new AiError("Couldn't reach the AI. Check your internet connection.", "network");
+  }
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    content?: Record<string, unknown>[];
+    stop_reason?: string;
+  };
+  if (!res.ok || !Array.isArray(data.content)) {
+    throw new AiError(
+      data.error ?? "The AI request failed. Try again.",
+      res.status === 429 ? "rate" : "other"
+    );
+  }
+  if (data.stop_reason === "refusal") {
     throw new AiError("The AI declined to answer that one. Try rephrasing.", "refusal");
   }
-  const text = response.content
-    .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
-    .map((b) => b.text)
+  const text = data.content
+    .filter((b) => b.type === "text" && typeof b.text === "string")
+    .map((b) => b.text as string)
     .join("");
-  return {
-    reply: parseReply(text),
-    assistantTurn: { role: "assistant", content: response.content },
-  };
+  return { reply: parseReply(text), assistantTurn: { role: "assistant", content: data.content } };
 }

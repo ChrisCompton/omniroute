@@ -4,7 +4,6 @@ import { useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -16,7 +15,7 @@ import {
 
 import { colors } from "@/components/theme";
 import { Button, Card, Chip, styles } from "@/components/ui";
-import { AiError, askCoach, type ChatHistory, type CoachReply } from "@/lib/ai";
+import { AI_PROXY_URL, AiError, askCoach, type ChatHistory, type CoachReply } from "@/lib/ai";
 import { sumMacros } from "@/lib/calc";
 import { dateKey } from "@/lib/date";
 import type { Meal } from "@/lib/types";
@@ -37,74 +36,6 @@ const STARTERS = [
 ];
 
 const MEALS: Meal[] = ["breakfast", "lunch", "dinner", "snack"];
-const KEYS_URL = "https://console.anthropic.com/settings/keys";
-
-function KeySetup({
-  initial,
-  onSave,
-  onCancel,
-}: {
-  initial: string;
-  onSave: (k: string) => void;
-  onCancel?: () => void;
-}) {
-  const [key, setKey] = useState(initial);
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={{ alignItems: "center", marginVertical: 16 }}>
-        <Ionicons name="chatbubbles" size={48} color={colors.accent} />
-        <Text style={[styles.h1, { fontSize: 24, marginTop: 8, textAlign: "center" }]}>
-          Log meals by chatting
-        </Text>
-        <Text style={[styles.muted, { textAlign: "center", marginTop: 6, lineHeight: 20 }]}>
-          Tell the AI what you ate. It asks a few quick questions (portion, cooking, sauces) and
-          then logs the calories for you.
-        </Text>
-      </View>
-      <Card>
-        <Text style={[styles.text, { fontWeight: "700", marginBottom: 6 }]}>
-          Connect your Claude API key
-        </Text>
-        <Text style={[styles.muted, { lineHeight: 20, marginBottom: 12 }]}>
-          The chat runs on Claude by Anthropic, using your own API key. Create one at
-          console.anthropic.com, then paste it below. A meal chat usually costs about a cent.
-        </Text>
-        <TextInput
-          value={key}
-          onChangeText={setKey}
-          placeholder="sk-ant-..."
-          placeholderTextColor={colors.muted}
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry
-          style={[styles.input, { marginBottom: 12 }]}
-        />
-        <Button
-          title="Save key"
-          disabled={!key.trim().startsWith("sk-")}
-          onPress={() => onSave(key)}
-        />
-        <Button
-          title="Get an API key"
-          variant="ghost"
-          icon="open-outline"
-          onPress={() => void Linking.openURL(KEYS_URL)}
-          style={{ marginTop: 4 }}
-        />
-        {onCancel ? <Button title="Cancel" variant="ghost" onPress={onCancel} /> : null}
-      </Card>
-      <Text style={[styles.muted, { fontSize: 12, lineHeight: 18 }]}>
-        🔒 Your key is saved only on this device and is sent only to Anthropic's API. Don't use this
-        on a shared computer.
-      </Text>
-    </ScrollView>
-  );
-}
-
 function EstimateCard({
   reply,
   onLog,
@@ -178,7 +109,7 @@ function EstimateCard({
 }
 
 export default function ChatScreen() {
-  const { data, targets, addFood, setAiKey } = useStore();
+  const { data, targets, addFood } = useStore();
   const navigation = useNavigation();
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [history, setHistory] = useState<ChatHistory>([]);
@@ -186,62 +117,42 @@ export default function ChatScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logged, setLogged] = useState<Record<string, boolean>>({});
-  const [editingKey, setEditingKey] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () =>
-        data.aiKey ? (
-          <View style={[styles.row, { gap: 18, marginRight: 16 }]}>
-            <Pressable
-              onPress={() => {
-                setMessages([]);
-                setHistory([]);
-                setError(null);
-              }}
-              hitSlop={10}
-              accessibilityLabel="New chat"
-            >
-              <Ionicons name="add-circle-outline" size={24} color={colors.text} />
-            </Pressable>
-            <Pressable
-              onPress={() => setEditingKey(true)}
-              hitSlop={10}
-              accessibilityLabel="AI settings"
-            >
-              <Ionicons name="key-outline" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-        ) : null,
+      headerRight: () => (
+        <Pressable
+          onPress={() => {
+            setMessages([]);
+            setHistory([]);
+            setError(null);
+          }}
+          hitSlop={10}
+          accessibilityLabel="New chat"
+          style={{ marginRight: 16 }}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={colors.text} />
+        </Pressable>
+      ),
     });
-  }, [navigation, data.aiKey]);
+  }, [navigation]);
 
   if (!data.profile || !targets) return null;
   const profile = data.profile;
 
-  if (!data.aiKey || editingKey) {
+  if (!AI_PROXY_URL) {
     return (
-      <View style={{ flex: 1 }}>
-        <KeySetup
-          initial={data.aiKey}
-          onSave={(k) => {
-            setAiKey(k);
-            setEditingKey(false);
-          }}
-          onCancel={data.aiKey ? () => setEditingKey(false) : undefined}
-        />
-        {data.aiKey && editingKey ? (
-          <Button
-            title="Remove key from this device"
-            variant="danger"
-            onPress={() => {
-              setAiKey("");
-              setEditingKey(false);
-            }}
-            style={{ margin: 16 }}
-          />
-        ) : null}
+      <View
+        style={[styles.screen, styles.content, { alignItems: "center", justifyContent: "center" }]}
+      >
+        <Ionicons name="chatbubbles-outline" size={48} color={colors.muted} />
+        <Text style={[styles.h1, { fontSize: 22, marginTop: 10, textAlign: "center" }]}>
+          AI chat coming soon
+        </Text>
+        <Text style={[styles.muted, { textAlign: "center", marginTop: 6 }]}>
+          Meanwhile, you can log food from the Food tab.
+        </Text>
       </View>
     );
   }
@@ -259,7 +170,7 @@ export default function ChatScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     try {
       const today = dateKey();
-      const { reply, assistantTurn } = await askCoach(data.aiKey, nextHistory, {
+      const { reply, assistantTurn } = await askCoach(nextHistory, {
         profile,
         targets,
         eatenToday: sumMacros(data.foods.filter((f) => f.date === today)),
@@ -275,7 +186,6 @@ export default function ChatScreen() {
       setMessages((m) => m.filter((x) => x.id !== userMsg.id));
       setInput(content);
       setError(err instanceof AiError ? err.message : "Something went wrong. Try again.");
-      if (err instanceof AiError && err.kind === "auth") setEditingKey(true);
     } finally {
       setBusy(false);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);

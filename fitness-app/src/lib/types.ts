@@ -68,6 +68,4 @@ export interface AppData {
   steps: Record<string, number>;
   workouts: Record<string, WorkoutLog>;
   water: Record<string, number>;
-  /** The user's own Anthropic API key for the AI meal coach. Stored on this device only. */
-  aiKey: string;
 }
