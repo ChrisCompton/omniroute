@@ -38,6 +38,8 @@ const eslintConfig = [
       "bin/**",
       // Dependencies
       "node_modules/**",
+      // Standalone Expo app (has its own toolchain)
+      "fitness-app/**",
       // VS Code extension and its large test fixtures
       "vscode-extension/**",
       // Electron app

@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Rowian Tracker",
+    "slug": "rowian-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rowian.tracker",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMotionUsageDescription": "Rowian Tracker counts your steps to track your daily step goal.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.ACTIVITY_RECOGNITION"],
+      "package": "com.rowian.tracker"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Rowian Tracker counts your steps to track your daily step goal."
+        }
+      ]
+    ],
+    "scheme": "rowiantracker",
+    "backgroundColor": "#0B0F14",
+    "experiments": {
+      "typedRoutes": false
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F14"
+    }
+  }
+}

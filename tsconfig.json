@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
+    "fitness-app",
     "open-sse",
     "antigravity-manager-analysis",
     "app.__qa_backup",
