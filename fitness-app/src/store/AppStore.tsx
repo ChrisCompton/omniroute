@@ -12,7 +12,7 @@ import {
 
 import { computeTargets } from "@/lib/calc";
 import { dateKey } from "@/lib/date";
-import type { AppData, FoodEntry, Profile, Targets, WorkoutLog } from "@/lib/types";
+import type { AppData, FoodEntry, LoggedWorkout, Profile, Targets, WorkoutLog } from "@/lib/types";
 
 const STORAGE_KEY = "rowiantracker:v1";
 
@@ -23,6 +23,7 @@ const EMPTY: AppData = {
   steps: {},
   workouts: {},
   water: {},
+  activities: [],
 };
 
 interface Store {
@@ -30,8 +31,12 @@ interface Store {
   data: AppData;
   targets: Targets | null;
   saveProfile: (p: Profile) => void;
-  addFood: (e: Omit<FoodEntry, "id" | "createdAt">) => void;
+  /** Returns the new entry's id. */
+  addFood: (e: Omit<FoodEntry, "id" | "createdAt">) => string;
   removeFood: (id: string) => void;
+  /** Returns the new workout's id. */
+  addActivity: (w: Omit<LoggedWorkout, "id" | "createdAt">) => string;
+  removeActivity: (id: string) => void;
   setSteps: (date: string, steps: number) => void;
   addWater: (ml: number, date?: string) => void;
   logWeight: (kg: number, date?: string) => void;
@@ -79,7 +84,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addFood = useCallback((e: Omit<FoodEntry, "id" | "createdAt">) => {
-    setData((d) => ({ ...d, foods: [...d.foods, { ...e, id: uid(), createdAt: Date.now() }] }));
+    const id = uid();
+    setData((d) => ({ ...d, foods: [...d.foods, { ...e, id, createdAt: Date.now() }] }));
+    return id;
+  }, []);
+
+  const addActivity = useCallback((w: Omit<LoggedWorkout, "id" | "createdAt">) => {
+    const id = uid();
+    setData((d) => ({ ...d, activities: [...d.activities, { ...w, id, createdAt: Date.now() }] }));
+    return id;
+  }, []);
+
+  const removeActivity = useCallback((id: string) => {
+    setData((d) => ({ ...d, activities: d.activities.filter((a) => a.id !== id) }));
   }, []);
 
   const removeFood = useCallback((id: string) => {
@@ -161,6 +178,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       saveProfile,
       addFood,
       removeFood,
+      addActivity,
+      removeActivity,
       setSteps,
       addWater,
       logWeight,
@@ -175,6 +194,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       saveProfile,
       addFood,
       removeFood,
+      addActivity,
+      removeActivity,
       setSteps,
       addWater,
       logWeight,

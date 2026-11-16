@@ -33,7 +33,7 @@ export default function TabLayout() {
       >
         <Tabs.Screen name="index" options={{ title: "Coach" }} />
         <Tabs.Screen name="food" options={{ title: "Food" }} />
-        <Tabs.Screen name="chat" options={{ title: "Ask AI" }} />
+        <Tabs.Screen name="chat" options={{ title: "AI Coach" }} />
         <Tabs.Screen name="gym" options={{ title: "Gym" }} />
         <Tabs.Screen name="steps" options={{ title: "Steps" }} />
         <Tabs.Screen name="profile" options={{ title: "Me" }} />

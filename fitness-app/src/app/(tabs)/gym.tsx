@@ -51,6 +51,7 @@ export default function GymScreen() {
   const selDate = week.find((d) => dateKey(d) === selected) ?? today;
   const day = plan[selDate.getDay()];
   const log = data.workouts[selected];
+  const aiLogged = data.activities.filter((a) => a.date === selected);
   const isToday = selected === dateKey(today);
 
   return (
@@ -95,6 +96,31 @@ export default function GymScreen() {
       </View>
 
       {rest ? <RestTimer key={rest.key} seconds={rest.sec} onDone={() => setRest(null)} /> : null}
+
+      {aiLogged.map((a) => (
+        <Card key={a.id} style={{ borderColor: colors.accentDim }}>
+          <View style={[styles.row, { marginBottom: 6 }]}>
+            <Ionicons name="sparkles" size={16} color={colors.accent} />
+            <Text style={[styles.text, { fontWeight: "800", marginLeft: 8, flex: 1 }]}>
+              {a.title}
+            </Text>
+            <Text style={[styles.muted, { fontSize: 12 }]}>
+              logged by AI{a.kcalBurned ? ` · ~${a.kcalBurned} kcal` : ""}
+            </Text>
+          </View>
+          {a.strength.map((x, i) => (
+            <Text key={`s${i}`} style={[styles.muted, { lineHeight: 20 }]}>
+              • {x.name}: {x.sets}×{x.reps}
+              {x.weightKg ? ` @ ${x.weightKg} kg` : ""}
+            </Text>
+          ))}
+          {a.cardio.map((c, i) => (
+            <Text key={`c${i}`} style={[styles.muted, { lineHeight: 20 }]}>
+              • {c.activity}: {c.minutes} min
+            </Text>
+          ))}
+        </Card>
+      ))}
 
       {day.type === "rest" ? (
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>

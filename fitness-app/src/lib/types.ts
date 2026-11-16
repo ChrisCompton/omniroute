@@ -61,6 +61,17 @@ export interface WorkoutLog {
   finished: boolean;
 }
 
+/** A workout the AI coach logged from a chat or voice note. */
+export interface LoggedWorkout {
+  id: string;
+  date: string;
+  title: string;
+  strength: { name: string; sets: number; reps: number; weightKg: number }[];
+  cardio: { activity: string; minutes: number }[];
+  kcalBurned: number;
+  createdAt: number;
+}
+
 export interface AppData {
   profile: Profile | null;
   foods: FoodEntry[];
@@ -68,4 +79,5 @@ export interface AppData {
   steps: Record<string, number>;
   workouts: Record<string, WorkoutLog>;
   water: Record<string, number>;
+  activities: LoggedWorkout[];
 }

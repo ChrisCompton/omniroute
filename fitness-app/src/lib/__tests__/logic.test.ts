@@ -137,22 +137,22 @@ test("coach nudges about steps, protein and the workout", () => {
   assert.ok(ids.includes("water"));
 });
 
-test("AI reply parser keeps valid estimates and degrades gracefully", async () => {
-  const { parseReply } = await import("../ai.ts");
-  const est = parseReply(
+test("AI reply parser reads food, workouts and exercise tips, and degrades gracefully", async () => {
+  const { parseReply, buildContext, formVideoUrl } = await import("../ai.ts");
+  const food = parseReply(
     JSON.stringify({
-      status: "estimate",
-      message: "Here you go",
+      message: "Logged! 950 kcal left.",
       options: [],
       meal: "lunch",
-      items: [
+      food_items: [
         { name: "Burrito", portion: "1 large", kcal: 812.6, protein: 38.44, carbs: 90, fat: -3 },
       ],
+      workout: { title: "", strength: [], cardio: [], kcalBurned: 0 },
+      exercises: [],
     })
   );
-  assert.equal(est.status, "estimate");
-  assert.equal(est.meal, "lunch");
-  assert.deepEqual(est.items[0], {
+  assert.equal(food.meal, "lunch");
+  assert.deepEqual(food.foodItems[0], {
     name: "Burrito",
     portion: "1 large",
     kcal: 813,
@@ -160,28 +160,58 @@ test("AI reply parser keeps valid estimates and degrades gracefully", async () =
     carbs: 90,
     fat: 0,
   });
+  assert.equal(food.workout, null, "an empty workout is not logged");
+
+  const gym = parseReply(
+    JSON.stringify({
+      message: "Nice session",
+      options: [],
+      meal: "snack",
+      food_items: [],
+      workout: {
+        title: "Back day",
+        strength: [{ name: "Pull-ups", sets: 3, reps: 8, weightKg: 0 }],
+        cardio: [{ activity: "Treadmill walk", minutes: 15 }],
+        kcalBurned: 320,
+      },
+      exercises: [
+        { name: "Barbell row", muscle: "Back", setsReps: "3 x 8-10", steps: ["Hinge", "Row"] },
+      ],
+    })
+  );
+  assert.equal(gym.workout?.title, "Back day");
+  assert.equal(gym.workout?.strength[0].reps, 8);
+  assert.equal(gym.workout?.cardio[0].minutes, 15);
+  assert.equal(gym.exercises[0].steps.length, 2);
+  assert.equal(gym.foodItems.length, 0);
 
   const ask = parseReply(
     JSON.stringify({
-      status: "asking",
       message: "How big?",
       options: ["S", "M", "L", "XL", "XXL", "6th"],
       meal: "brunch",
-      items: [],
     })
   );
-  assert.equal(ask.status, "asking");
   assert.equal(ask.options.length, 5);
   assert.equal(ask.meal, "snack");
+  assert.equal(ask.foodItems.length, 0);
 
-  // An "estimate" with no items is treated as chat, and non-JSON text becomes a chat message.
-  assert.equal(
-    parseReply(
-      JSON.stringify({ status: "estimate", message: "hmm", options: [], meal: "dinner", items: [] })
-    ).status,
-    "chat"
-  );
   const plain = parseReply("Sorry, could you say that again?");
-  assert.equal(plain.status, "chat");
   assert.equal(plain.message, "Sorry, could you say that again?");
+
+  // The context sent to the server matches what it validates.
+  const ctx = buildContext({
+    profile: base,
+    targets: computeTargets(base),
+    eatenToday: { kcal: 900.4, protein: 60.2, carbs: 100, fat: 30 },
+    steps: 4200,
+    plan: planForDate(base, new Date(2026, 10, 16)),
+    planDone: false,
+    workoutsThisWeek: 1,
+    now: new Date(2026, 10, 16, 9, 5),
+  });
+  assert.equal(ctx.localTime, "09:05");
+  assert.equal(ctx.eaten.kcal, 900);
+  assert.equal(ctx.plan.type, "train");
+  assert.ok(formVideoUrl("Barbell row").includes("Barbell%20row%20proper%20form"));
 });

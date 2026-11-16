@@ -7,9 +7,14 @@ export interface CoachContext {
   heightCm: number;
   weightKg: number;
   goal: "lose" | "maintain" | "gain";
-  targets: { kcal: number; protein: number; carbs: number; fat: number };
-  eatenKcal: number;
-  eatenProtein: number;
+  experience: "beginner" | "intermediate" | "advanced";
+  equipment: "gym" | "home";
+  daysPerWeek: number;
+  targets: { kcal: number; protein: number; carbs: number; fat: number; steps: number };
+  eaten: { kcal: number; protein: number; carbs: number; fat: number };
+  steps: number;
+  plan: { type: "train"; name: string; exercises: string[]; done: boolean } | { type: "rest" };
+  workoutsThisWeek: number;
   localTime: string;
 }
 
@@ -25,7 +30,7 @@ export interface ChatRequest {
 export const LIMITS = {
   maxBodyBytes: 64_000,
   maxTurns: 25,
-  maxUserChars: 1000,
+  maxUserChars: 2000,
 };
 
 const ASSISTANT_BLOCK_TYPES = new Set(["text", "thinking", "redacted_thinking", "fallback"]);
@@ -40,38 +45,87 @@ function num(v: unknown, min: number, max: number): number | null {
     : null;
 }
 
+// Names come from the app's own exercise library; allow only plain text.
+const SAFE_NAME = /^[\p{L}\p{N} ()/,.'&+\-\u2013]{1,60}$/u;
+
+function oneOf<T extends string>(v: unknown, allowed: readonly T[]): T | null {
+  return typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : null;
+}
+
 function parseContext(c: unknown): CoachContext | string {
-  if (!isObj(c) || !isObj(c.targets)) return "Missing context.";
+  if (!isObj(c) || !isObj(c.targets) || !isObj(c.eaten) || !isObj(c.plan))
+    return "Missing context.";
   const t = c.targets;
-  const out = {
+  const e = c.eaten;
+  const nums = {
     age: num(c.age, 10, 110),
     heightCm: num(c.heightCm, 100, 250),
     weightKg: num(c.weightKg, 25, 350),
-    targets: {
-      kcal: num(t.kcal, 500, 10000),
-      protein: num(t.protein, 0, 1000),
-      carbs: num(t.carbs, 0, 2000),
-      fat: num(t.fat, 0, 1000),
-    },
-    eatenKcal: num(c.eatenKcal, 0, 50000),
-    eatenProtein: num(c.eatenProtein, 0, 5000),
+    daysPerWeek: num(c.daysPerWeek, 1, 7),
+    steps: num(c.steps, 0, 200000),
+    workoutsThisWeek: num(c.workoutsThisWeek, 0, 50),
+    tKcal: num(t.kcal, 500, 10000),
+    tProtein: num(t.protein, 0, 1000),
+    tCarbs: num(t.carbs, 0, 2000),
+    tFat: num(t.fat, 0, 1000),
+    tSteps: num(t.steps, 0, 100000),
+    eKcal: num(e.kcal, 0, 50000),
+    eProtein: num(e.protein, 0, 5000),
+    eCarbs: num(e.carbs, 0, 10000),
+    eFat: num(e.fat, 0, 5000),
   };
-  const nums = [
-    out.age,
-    out.heightCm,
-    out.weightKg,
-    out.eatenKcal,
-    out.eatenProtein,
-    ...Object.values(out.targets),
-  ];
-  if (nums.some((n) => n === null)) return "Invalid numbers in context.";
-  if (c.sex !== "male" && c.sex !== "female") return "Invalid sex.";
-  if (c.goal !== "lose" && c.goal !== "maintain" && c.goal !== "gain") return "Invalid goal.";
+  if (Object.values(nums).some((n) => n === null)) return "Invalid numbers in context.";
+  const n = nums as { [K in keyof typeof nums]: number };
+  const sex = oneOf(c.sex, ["male", "female"] as const);
+  const goal = oneOf(c.goal, ["lose", "maintain", "gain"] as const);
+  const experience = oneOf(c.experience, ["beginner", "intermediate", "advanced"] as const);
+  const equipment = oneOf(c.equipment, ["gym", "home"] as const);
+  if (!sex || !goal || !experience || !equipment) return "Invalid profile in context.";
+
+  let plan: CoachContext["plan"];
+  if (c.plan.type === "rest") {
+    plan = { type: "rest" };
+  } else if (c.plan.type === "train") {
+    const ex = c.plan.exercises;
+    if (
+      typeof c.plan.name !== "string" ||
+      !SAFE_NAME.test(c.plan.name) ||
+      !Array.isArray(ex) ||
+      ex.length > 8 ||
+      !ex.every((x) => typeof x === "string" && SAFE_NAME.test(x))
+    ) {
+      return "Invalid plan in context.";
+    }
+    plan = {
+      type: "train",
+      name: c.plan.name,
+      exercises: ex as string[],
+      done: c.plan.done === true,
+    };
+  } else {
+    return "Invalid plan in context.";
+  }
+
   const localTime =
     typeof c.localTime === "string" && /^[\d:apmAPM .]{3,12}$/.test(c.localTime)
       ? c.localTime
       : "unknown";
-  return { ...(out as CoachContext), sex: c.sex, goal: c.goal, localTime };
+  return {
+    age: n.age,
+    sex,
+    heightCm: n.heightCm,
+    weightKg: n.weightKg,
+    goal,
+    experience,
+    equipment,
+    daysPerWeek: n.daysPerWeek,
+    targets: { kcal: n.tKcal, protein: n.tProtein, carbs: n.tCarbs, fat: n.tFat, steps: n.tSteps },
+    eaten: { kcal: n.eKcal, protein: n.eProtein, carbs: n.eCarbs, fat: n.eFat },
+    steps: n.steps,
+    plan,
+    workoutsThisWeek: n.workoutsThisWeek,
+    localTime,
+  };
 }
 
 /** Returns the parsed request, or an error message for a 400 response. */

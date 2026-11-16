@@ -15,7 +15,11 @@ Your own personal fitness guy, in an Expo (React Native) app. It works out your 
 
   Sets, reps and rest times follow your goal and experience. Home users get bodyweight swaps. Each exercise has a form cue you can tap to see and a rest timer. You tick exercises off and finish the workout.
 
-- **Ask AI (meal chat)**: describe what you ate in your own words. The AI (Claude) asks a few quick questions about the details that change the calories most, such as portion size, cooking oil, sauces and drinks, with tappable answers. It then shows an itemised estimate you can add to your food log in one tap. It also answers general nutrition questions using your goal and what you've eaten today. It runs on your own Anthropic API key, which is stored only on your device.
+- **AI Coach**: a built-in AI personal trainer, with no sign-up or API key needed. Type or send a voice note, which uses the browser's own speech recognition.
+  - **Food**: say what you ate and it estimates the calories and macros, adds them to today's log automatically (with Undo), and tells you what's left for the day. It asks a quick question only when a detail really changes the number.
+  - **Workouts**: say what you trained and it logs the session, ticks off today's planned workout, and tells you how your week is going.
+  - **Questions**: ask things like "what's a good back exercise?" and it answers with exercise cards (sets × reps, how-to steps, a "Watch how" video link), using your goal and today's numbers.
+  - It runs through a small server in `ai-proxy/` (a Cloudflare Worker) that keeps the Anthropic API key private. See `ai-proxy/README.md`.
 - **Steps**: uses the phone's pedometer (`expo-sensors`). The step goal depends on your goal and activity level. You get a 7-day chart, kcal and km estimates, and can enter steps by hand from a watch or treadmill.
 - **Coach tab**: tells you what to do today. It shows kcal left, macros, steps, water and today's workout, plus rule-based tips. Examples: "45 g protein to go: here's how", "3,200 steps to go ≈ 32 min walk", "you're over today", and your 2-week weight trend compared with your goal.
 - **Me tab**: your targets, BMI and weight log (logging weight updates your targets). You can edit your profile or reset everything.
