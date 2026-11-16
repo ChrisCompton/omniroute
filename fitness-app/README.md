@@ -15,6 +15,7 @@ Your own personal fitness guy, in an Expo (React Native) app. It works out your 
 
   Sets, reps and rest times follow your goal and experience. Home users get bodyweight swaps. Each exercise has a form cue you can tap to see and a rest timer. You tick exercises off and finish the workout.
 
+- **Ask AI (meal chat)**: describe what you ate in your own words. The AI (Claude) asks a few quick questions about the details that change the calories most, such as portion size, cooking oil, sauces and drinks, with tappable answers. It then shows an itemised estimate you can add to your food log in one tap. It also answers general nutrition questions using your goal and what you've eaten today. It runs on your own Anthropic API key, which is stored only on your device.
 - **Steps**: uses the phone's pedometer (`expo-sensors`). The step goal depends on your goal and activity level. You get a 7-day chart, kcal and km estimates, and can enter steps by hand from a watch or treadmill.
 - **Coach tab**: tells you what to do today. It shows kcal left, macros, steps, water and today's workout, plus rule-based tips. Examples: "45 g protein to go: here's how", "3,200 steps to go ≈ 32 min walk", "you're over today", and your 2-week weight trend compared with your goal.
 - **Me tab**: your targets, BMI and weight log (logging weight updates your targets). You can edit your profile or reset everything.
@@ -59,3 +60,11 @@ src/
 ```
 
 _This is general fitness guidance, not medical advice._
+
+## Web version (GitHub Pages)
+
+The workflow `.github/workflows/fitness-app-pages.yml` builds the web version and publishes it to GitHub Pages every time `fitness-app/` changes on `main`. You can also run it by hand from the Actions tab.
+
+One-time setup: in the GitHub repo, go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**. The site is then served at `https://<user>.github.io/<repo>/`.
+
+To build the web version locally at a sub-path: `EXPO_BASE_URL=/omniroute npx expo export --platform web`.

@@ -23,6 +23,7 @@ const EMPTY: AppData = {
   steps: {},
   workouts: {},
   water: {},
+  aiKey: "",
 };
 
 interface Store {
@@ -37,6 +38,7 @@ interface Store {
   logWeight: (kg: number, date?: string) => void;
   toggleExercise: (date: string, sessionName: string, exerciseId: string) => void;
   setWorkoutFinished: (date: string, sessionName: string, finished: boolean) => void;
+  setAiKey: (key: string) => void;
   resetAll: () => void;
 }
 
@@ -146,6 +148,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     [updateWorkout]
   );
 
+  const setAiKey = useCallback((key: string) => setData((d) => ({ ...d, aiKey: key.trim() })), []);
+
   const resetAll = useCallback(() => setData(EMPTY), []);
 
   const targets = useMemo(
@@ -166,6 +170,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       logWeight,
       toggleExercise,
       setWorkoutFinished,
+      setAiKey,
       resetAll,
     }),
     [
@@ -180,6 +185,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       logWeight,
       toggleExercise,
       setWorkoutFinished,
+      setAiKey,
       resetAll,
     ]
   );

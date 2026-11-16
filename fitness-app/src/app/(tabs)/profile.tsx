@@ -148,8 +148,8 @@ export default function ProfileScreen() {
       </Card>
 
       <Text style={[styles.muted, { fontSize: 12, marginBottom: 12, lineHeight: 18 }]}>
-        Rowian Tracker gives general fitness guidance, not medical advice. Check with a doctor before
-        starting a new diet or training plan, especially if you have a health condition.
+        Rowian Tracker gives general fitness guidance, not medical advice. Check with a doctor
+        before starting a new diet or training plan, especially if you have a health condition.
       </Text>
       <Button title="Reset all data" variant="danger" onPress={confirmReset} />
     </ScrollView>

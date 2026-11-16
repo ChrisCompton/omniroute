@@ -126,6 +126,13 @@ export default function FoodScreen() {
       })}
 
       <Button
+        title="Describe a meal to AI"
+        icon="chatbubbles"
+        variant="secondary"
+        onPress={() => router.push("/chat")}
+        style={{ marginBottom: 10 }}
+      />
+      <Button
         title="Add food"
         icon="add"
         onPress={() => router.push({ pathname: "/add-food", params: { date: key } })}

@@ -136,3 +136,52 @@ test("coach nudges about steps, protein and the workout", () => {
   assert.ok(ids.includes("left"));
   assert.ok(ids.includes("water"));
 });
+
+test("AI reply parser keeps valid estimates and degrades gracefully", async () => {
+  const { parseReply } = await import("../ai.ts");
+  const est = parseReply(
+    JSON.stringify({
+      status: "estimate",
+      message: "Here you go",
+      options: [],
+      meal: "lunch",
+      items: [
+        { name: "Burrito", portion: "1 large", kcal: 812.6, protein: 38.44, carbs: 90, fat: -3 },
+      ],
+    })
+  );
+  assert.equal(est.status, "estimate");
+  assert.equal(est.meal, "lunch");
+  assert.deepEqual(est.items[0], {
+    name: "Burrito",
+    portion: "1 large",
+    kcal: 813,
+    protein: 38.4,
+    carbs: 90,
+    fat: 0,
+  });
+
+  const ask = parseReply(
+    JSON.stringify({
+      status: "asking",
+      message: "How big?",
+      options: ["S", "M", "L", "XL", "XXL", "6th"],
+      meal: "brunch",
+      items: [],
+    })
+  );
+  assert.equal(ask.status, "asking");
+  assert.equal(ask.options.length, 5);
+  assert.equal(ask.meal, "snack");
+
+  // An "estimate" with no items is treated as chat, and non-JSON text becomes a chat message.
+  assert.equal(
+    parseReply(
+      JSON.stringify({ status: "estimate", message: "hmm", options: [], meal: "dinner", items: [] })
+    ).status,
+    "chat"
+  );
+  const plain = parseReply("Sorry, could you say that again?");
+  assert.equal(plain.status, "chat");
+  assert.equal(plain.message, "Sorry, could you say that again?");
+});
