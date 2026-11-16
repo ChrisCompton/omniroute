@@ -7,20 +7,19 @@ A Cloudflare Worker that powers the in-app AI Coach. It keeps the Anthropic API 
 - Accepts only `POST /chat` from the app's site (`ALLOWED_ORIGINS`).
 - Builds the coaching prompt itself and checks every request (`src/validate.ts`), so it can't be used as a general-purpose AI.
 - Limits each visitor (by IP) to 10 replies per minute.
-- Calls Claude (`MODEL`, default `claude-opus-5-5`) with structured JSON output, so the app can log food and workouts automatically.
+- Uses **Cloudflare Workers AI** (`AI_MODEL`, default Llama 3.3 70B) by default. It's free within Cloudflare's daily allowance (about 10,000 "neurons" a day, roughly 100+ chat messages across all users) and needs no API key or billing. When the allowance runs out, the AI pauses until it resets at midnight UTC; nothing is charged.
+- Optional upgrade: add an `ANTHROPIC_API_KEY` secret and it switches to Claude (`CLAUDE_MODEL`), which is smarter but paid per message.
+- Replies are structured JSON, so the app can log food and workouts automatically.
 
 ## Deploy
 
 ```bash
 npm install
-npx wrangler login                          # or set CLOUDFLARE_API_TOKEN
+npx wrangler login      # or set CLOUDFLARE_API_TOKEN
 npx wrangler deploy
-npx wrangler secret put ANTHROPIC_API_KEY   # paste your key from console.anthropic.com
 ```
 
-Then build the web app with `EXPO_PUBLIC_AI_PROXY_URL=https://rowian-tracker-ai.<your-subdomain>.workers.dev`.
-
-**Cost control:** you pay for every user's chats. Set a monthly spend limit at console.anthropic.com → Settings → Limits. To make each chat cheaper, set `MODEL` in `wrangler.jsonc` to `claude-haiku-5-5`.
+Live at `https://rowian-tracker-ai.rowian0.workers.dev`. Build the web app with `EXPO_PUBLIC_AI_PROXY_URL` set to that address.
 
 ## Test
 

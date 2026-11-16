@@ -1,15 +1,19 @@
 {
-  // Cloudflare Worker that lets the Rowian Tracker web/app use the AI meal chat
-  // without each person needing their own API key. The Anthropic key is stored
-  // as a Worker secret: `npx wrangler secret put ANTHROPIC_API_KEY`.
+  // Cloudflare Worker behind the Rowian Tracker AI Coach. Users need no API key.
+  // By default it uses Cloudflare Workers AI (free daily allowance, no billing).
+  // To switch to Claude (paid, smarter), add a secret: `npx wrangler secret put ANTHROPIC_API_KEY`.
   "name": "rowian-tracker-ai",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
+  "ai": { "binding": "AI" },
   "vars": {
     // Sites allowed to call this Worker (comma-separated).
     "ALLOWED_ORIGINS": "https://rowian7.github.io,http://localhost:8081",
-    "MODEL": "claude-opus-5-5"
+    "AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "CLAUDE_MODEL": "claude-opus-5-5"
   },
   // Each visitor (by IP) gets at most 10 AI replies per minute.
-  "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "4201", "simple": { "limit": 10, "period": 60 } }]
+  "ratelimits": [
+    { "name": "RATE_LIMITER", "namespace_id": "4201", "simple": { "limit": 10, "period": 60 } }
+  ]
 }
